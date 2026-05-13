@@ -65,20 +65,69 @@ describe('Todo API Testing', () => {
     expect(todos).toStrictEqual([])
   })
 
+  test('Given a valid todo body, When receive a POST /api/v1/todos request, Then it should response the created todo object with status code 201', async () => {
+    // arrange: mock the repo function to return a created todo object
+    const todoBody: TodoBody = {
+      name: 'new todo',
+      description: 'new description'
+    }
+    const createdTodo: Todo = {
+      id: '3',
+      status: false,
+      ...todoBody
+    }
+    vi.spyOn(TodoRepo, 'createTodo').mockImplementation(async () => createdTodo)
+
+    // act: receive a POST /api/v1/todos request
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/todos',
+      payload: todoBody
+    })
+
+    // assert: response should be the created todo object with status code 201
+    expect(response.statusCode).toBe(201)
+    const result = JSON.parse(response.body)['todo']
+    expect(result).toStrictEqual(createdTodo)
+  })
+
   test('Given a valid ID and status, When receive a PUT /api/v1/todos/:id request, Then it should response the updated todo object', async () => {
     // arrange: mock the repo function to return an updated todo object
+    const id = '1'
+    const status = true
+    const updatedTodo: Todo = {
+      id,
+      name: 'todo 1',
+      description: 'description 1',
+      status
+    }
+    vi.spyOn(TodoRepo, 'updateTodoById').mockImplementation(async () => updatedTodo)
 
     // act: receive a PUT /api/v1/todos/:id request
+    const response = await server.inject({
+      method: 'PUT',
+      url: `/api/v1/todos/${id}`,
+      payload: { status }
+    })
 
     // assert: response should be the updated todo object
+    expect(response.statusCode).toBe(200)
+    const result = JSON.parse(response.body)['todo']
+    expect(result).toStrictEqual(updatedTodo)
   })
 
   test('Given an invalid ID, When receive a PUT /api/v1/todos/:id request, Then it should response with status code 404', async () => {
     // arrange: mock the repo function to return null
+    vi.spyOn(TodoRepo, 'updateTodoById').mockImplementation(async () => null)
 
     // act: receive a PUT /api/v1/todos/:id request
+    const response = await server.inject({
+      method: 'PUT',
+      url: '/api/v1/todos/non-existent-id',
+      payload: { status: true }
+    })
 
     // assert: response should with status code 404
-
+    expect(response.statusCode).toBe(404)
   })
 })
